@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#d2601a">
+<title>反正 段落選拔</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-title" content="反正 選拔">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #f6f5f2; --surface: #ffffff; --fg: #1e1d1b; --muted: #6d6a64;
+  --line: #e2dfd8; --accent: #d2601a; --accent-ink: #ffffff; --ok: #2f7d4f;
+  --gold: #e0a400; --gold-soft: #fff4d1;
+  --p0: #2f6fd6; --p1: #2f9e5b; --p2: #c2459a;
+  --sans: "Noto Sans TC", -apple-system, "PingFang TC", "Heiti TC", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161514; --surface: #201f1d; --fg: #eeebe5; --muted: #9c978e;
+    --line: #34322e; --accent: #f08a45; --accent-ink: #1a1208; --ok: #6cc28d;
+    --gold: #f2c14a; --gold-soft: #3a2f12;
+    --p0: #6c9ef0; --p1: #5cc98a; --p2: #e07cc0;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.5; -webkit-tap-highlight-color: transparent; }
+.wrap {
+  max-width: 680px; margin: 0 auto;
+  padding-top: calc(36px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+header { display: grid; gap: 6px; margin-bottom: 18px; }
+h1 { margin: 0; font-size: 26px; font-weight: 700; }
+.meta { color: var(--muted); font-size: 14px; }
+.how { margin: 0 0 16px; padding: 0; list-style: none; color: var(--muted); font-size: 13.5px; display: grid; gap: 2px; }
+.how b { color: var(--fg); font-weight: 500; }
+button { font: inherit; cursor: pointer; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; touch-action: manipulation; }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* tabs */
+.tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.tabs button { padding: 7px 14px; font-size: 14px; }
+.tabs button[aria-selected="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+
+/* list */
+ol { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden; }
+.row {
+  display: grid; grid-template-columns: 2.6em minmax(0, 1fr) auto;
+  align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--line);
+  transition: background-color .4s;
+}
+.row:first-child { border-top: 0; }
+.row.flash { animation: flash .9s ease-out; }
+@keyframes flash { 0% { background: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--surface)); } 100% { background: var(--surface); } }
+.row.allin { background: var(--gold-soft); }
+.cue { font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; display: grid; place-items: center; width: 2.2em; height: 2.2em; border-radius: 50%; border: 1px dashed var(--line); transition: all .25s; }
+.row.heard .cue { border: 1px solid var(--ok); color: var(--ok); }
+.song { min-width: 0; display: flex; align-items: center; gap: 8px; }
+.song b { font-weight: 500; font-size: 16px; min-width: 0; overflow-wrap: anywhere; }
+.play {
+  flex: none; font-size: 12.5px; text-decoration: none; color: var(--accent-ink); background: var(--accent);
+  border-radius: 999px; padding: 3px 10px; font-weight: 500; transition: transform .08s;
+}
+.play:active, .dock button:active, .tabs button:active, .sheet button:active { transform: scale(.93); }
+.dock button, .tabs button, .sheet button { transition: transform .08s; }
+.row.heard .play { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.play.nudge { animation: nudge .5s ease; }
+@keyframes nudge { 0%,100% { transform: scale(1); } 30% { transform: scale(1.25); } 60% { transform: scale(.95); } }
+.row.shake { animation: shake .32s linear; }
+@keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+
+.chips { display: flex; gap: 8px; }
+.chip {
+  --c: var(--p0);
+  position: relative; padding: 6px 10px; font-size: 13.5px; min-width: 3.9em; border-radius: 999px;
+  border: 1.5px solid color-mix(in srgb, var(--c) 45%, var(--line)); color: var(--c); background: var(--surface);
+  min-height: 38px;
+  transition: background-color .12s, color .12s, border-color .12s, opacity .2s, transform .15s;
+}
+.chip[data-p="1"] { --c: var(--p1); }
+.chip[data-p="2"] { --c: var(--p2); }
+.chip[aria-pressed="true"] { background: var(--c); color: #fff; border-color: var(--c); }
+.chip[aria-pressed="true"]::before { content: "♥ "; }
+.row:not(.heard) .chip { opacity: .42; }
+.chip.press { transform: scale(.86); transition: transform .05s; }
+.chip.pop, .cue.pop { animation: pop .34s cubic-bezier(.3, 1.8, .5, 1); }
+@keyframes pop { 0% { transform: scale(.86); } 55% { transform: scale(1.16); } 100% { transform: scale(1); } }
+.chip.drop { animation: drop .22s ease-out; }
+@keyframes drop { 0% { transform: scale(.86); } 100% { transform: scale(1); } }
+.chip.unlock { animation: unlock .4s cubic-bezier(.3, 1.8, .5, 1); }
+@keyframes unlock { 0% { transform: scale(.7); opacity: .42; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+@media (max-width: 520px) {
+  .row { grid-template-columns: 2.6em minmax(0, 1fr); }
+  .chips { grid-column: 2; }
+}
+
+/* particles */
+.fx { position: fixed; pointer-events: none; z-index: 50; font-size: 14px; will-change: transform, opacity; }
+
+/* ranking */
+.rank { display: none; }
+.rank.on { display: block; }
+.list.off { display: none; }
+.rk { display: grid; grid-template-columns: 2em minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); }
+.rk:first-child { border-top: 0; }
+.rk .n { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.rk .t { min-width: 0; }
+.rk .t small { color: var(--muted); font-family: var(--mono); margin-right: 6px; }
+.dots { display: flex; gap: 4px; }
+.dot { width: 1.6em; height: 1.6em; border-radius: 50%; display: grid; place-items: center; font-size: 11px; color: #fff; background: var(--line); }
+.dot.on[data-p="0"] { background: var(--p0); } .dot.on[data-p="1"] { background: var(--p1); } .dot.on[data-p="2"] { background: var(--p2); }
+.rk.allin { background: var(--gold-soft); }
+.empty { padding: 18px; color: var(--muted); text-align: center; }
+.totals { display: flex; gap: 14px; flex-wrap: wrap; margin: 0 0 10px; font-size: 13.5px; color: var(--muted); }
+.totals b { font-variant-numeric: tabular-nums; }
+
+/* dock */
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  background: var(--surface); background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
+  padding: 10px max(16px, env(safe-area-inset-left, 0px)) calc(10px + env(safe-area-inset-bottom, 0px));
+}
+.dock-in { max-width: 680px; margin: 0 auto; display: grid; gap: 8px; }
+.meter { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .5s cubic-bezier(.2, .9, .3, 1.2); }
+.dock-row { display: flex; align-items: center; gap: 8px; }
+.stat { flex: 1; min-width: 0; font-size: 13px; line-height: 1.35; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stat b { color: var(--fg); }
+.stat .bump { display: inline-block; animation: bump .3s ease-out; }
+@keyframes bump { 0% { transform: scale(1.5); color: var(--accent); } 100% { transform: scale(1); } }
+.dock button { padding: 8px 12px; font-size: 13.5px; }
+.dock .go { background: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 500; }
+.dock .mute { width: 2.4em; padding: 8px 0; }
+
+/* sheet */
+.sheet-bg { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.35); display: none; align-items: flex-end; justify-content: center; }
+.sheet-bg.on { display: flex; }
+.sheet { width: 100%; max-width: 680px; background: var(--surface); border-radius: 14px 14px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 12px; animation: up .25s cubic-bezier(.2, .9, .3, 1.1); }
+@keyframes up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.sheet h2 { margin: 0; font-size: 17px; }
+.sheet p { margin: 0; color: var(--muted); font-size: 13.5px; }
+.pick { display: flex; gap: 8px; flex-wrap: wrap; }
+.pick button { padding: 9px 16px; font-size: 15px; }
+.sheet textarea { width: 100%; font-family: var(--mono); font-size: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); resize: none; }
+.sheet .acts { display: flex; gap: 8px; justify-content: flex-end; }
+.sheet .acts button { padding: 8px 14px; }
+.sheet .acts .go { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+
+/* toast */
+.toast { position: fixed; left: 50%; top: calc(14px + env(safe-area-inset-top, 0px)); z-index: 70; transform: translate(-50%, -20px); opacity: 0; background: var(--fg); color: var(--bg); padding: 8px 16px; border-radius: 999px; font-size: 14px; transition: all .25s cubic-bezier(.2, .9, .3, 1.3); pointer-events: none; max-width: calc(100% - 32px); text-align: center; }
+.toast.on { transform: translate(-50%, 0); opacity: 1; }
+
+/* notice (範本) */
+.notice { border: 1px solid var(--line); border-left: 4px solid var(--accent); background: var(--surface); border-radius: 10px; padding: 12px 14px; margin-bottom: 18px; font-size: 13.5px; line-height: 1.55; }
+.notice .warn { display: block; font-weight: 700; color: var(--accent); font-size: 14.5px; margin-bottom: 5px; }
+.notice p { margin: 0; }
+.notice details { margin-top: 9px; }
+.notice summary { cursor: pointer; color: var(--muted); font-size: 12.5px; font-weight: 500; }
+.notice details > div { margin-top: 8px; color: var(--muted); }
+.notice ul { margin: 0; padding-left: 1.15em; }
+.notice ul li { padding: 3px 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>反正</h1>
+    <span class="meta">imprv 段落選拔 · 聰聰／佳豪／趙陽</span>
+  </header>
+
+  <div class="notice">
+    <span class="warn">⚠️ 僅供試聽，不能作為正式工作用途</span>
+    <p>此為 320&nbsp;kbps 有損串流試聽版，非無損母帶。版權所有，僅授權指定對象本人聆聽，請勿轉傳、側錄或散布；連結可追溯並隨時撤銷。</p>
+    <details>
+      <summary>技術說明：為什麼不能當正式檔</summary>
+      <div>
+        <ul>
+          <li>格式為 320&nbsp;kbps AAC 有損壓縮，不是 WAV／母帶——高頻與動態已被壓縮演算法改變，量測與精修會失真。</li>
+          <li>以 DRM 保護串流播放、無檔案下載；任何側錄取得的音訊都是「解碼後再錄」的有損二手拷貝，品質更差。</li>
+          <li>平台僅保留此試聽版，母帶不在線上。混音母帶、實體壓片、廣播播出、商業授權等正式交付，一律另向我們索取正式檔，不得使用此連結的音訊。</li>
+        </ul>
+      </div>
+    </details>
+  </div>
+
+  <ul class="how">
+    <li>① 按 <b>▶ 聽</b> 開段落（聽過的編號會變綠圈）</li>
+    <li>② 喜歡就按<b>自己的名字</b>，可複選、再按取消</li>
+    <li>③ 聽完按下方 <b>交卷</b>，把連結傳給我們</li>
+  </ul>
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" id="tabList" aria-selected="true">試聽</button>
+    <button type="button" role="tab" id="tabRank" aria-selected="false">排行</button>
+  </div>
+
+  <ol id="list" class="list"></ol>
+
+  <section id="rank" class="rank">
+    <div class="totals" id="totals"></div>
+    <ol id="rankList"></ol>
+  </section>
+</div>
+
+<div class="dock">
+  <div class="dock-in">
+    <div class="meter"><i id="meter"></i></div>
+    <div class="dock-row">
+      <span class="stat" id="stat"></span>
+      <button type="button" class="mute" id="mute" aria-label="音效開關">🔊</button>
+      <button type="button" id="next">下一段 ▶</button>
+      <button type="button" class="go" id="submit">交卷</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-bg" id="sheetBg">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <h2 id="sheetTitle">交卷</h2>
+    <p id="sheetMsg">你是哪一位？</p>
+    <div class="pick" id="pick"></div>
+    <textarea id="out" rows="3" readonly hidden></textarea>
+    <div class="acts">
+      <button type="button" id="close">關閉</button>
+      <button type="button" class="go" id="send" hidden>複製連結</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const PEOPLE = ["聰聰", "佳豪", "趙陽"];
+const NOTE = [523.25, 659.25, 783.99];           // C5 E5 G5：三人全按＝C 大三和弦
+const ROWS = [
+  ["我很閒", "https://go.one.blendvision.com/pELkFl/dLu6m6n4"],
+  ["沒什麼大不了", "https://go.one.blendvision.com/pELkFl/fFBH5A9y"],
+  ["正反", "https://go.one.blendvision.com/pELkFl/KPgINpn3"],
+  ["張文德", "https://go.one.blendvision.com/pELkFl/lAgbJ4Xj"],
+  ["陳泰南", "https://go.one.blendvision.com/pELkFl/BNE8AtiE"],
+  ["林友惠", "https://go.one.blendvision.com/pELkFl/B7HAdCbA"],
+  ["許明傑", "https://go.one.blendvision.com/pELkFl/vm378I50"],
+  ["游家瑋", "https://go.one.blendvision.com/pELkFl/EHiuOVtx"],
+  ["黃俊奕", "https://go.one.blendvision.com/pELkFl/U5iqVBDX"],
+  ["蕭雅琪", "https://go.one.blendvision.com/pELkFl/4uxoLTfF"],
+  ["劉宜珊", "https://go.one.blendvision.com/pELkFl/OFofPbZJ"],
+  ["鄭佩貞", "https://go.one.blendvision.com/pELkFl/BnuXrWhh"],
+  ["楊亭勻", "https://go.one.blendvision.com/pELkFl/jwyxAm3f"],
+  ["李莉林", "https://go.one.blendvision.com/pELkFl/7EbGhnFL"],
+  ["劉志偉", "https://go.one.blendvision.com/pELkFl/1Rj1nIJM"],
+  ["吳國成", "https://go.one.blendvision.com/pELkFl/THvqKK0h"],
+  ["王姿萱", "https://go.one.blendvision.com/pELkFl/9zXazv0r"],
+  ["林家賢", "https://go.one.blendvision.com/pELkFl/jVhAp7aq"],
+  ["馬曉芳", "https://go.one.blendvision.com/pELkFl/NRFTnh5a"],
+  ["簡淑芬", "https://go.one.blendvision.com/pELkFl/v4SX5iNt"],
+  ["蛤", "https://go.one.blendvision.com/pELkFl/wk4kQB9z"],
+  ["漁夫帽", "https://go.one.blendvision.com/pELkFl/zUNan7PJ"],
+  ["Q", "https://go.one.blendvision.com/pELkFl/oC8cxLMt"],
+  ["律動", "https://go.one.blendvision.com/pELkFl/yfIYy0w9"],
+  ["回家", "https://go.one.blendvision.com/pELkFl/tUbWEAiS"],
+  ["走不走", "https://go.one.blendvision.com/pELkFl/W1hiLFiM"],
+  ["拔起", "https://go.one.blendvision.com/pELkFl/4st2Czzl"],
+  ["桃花", "https://go.one.blendvision.com/pELkFl/KtkCTsor"],
+  ["小檔案", "https://go.one.blendvision.com/pELkFl/I1Uyh554"],
+  ["超市廣告", "https://go.one.blendvision.com/pELkFl/jJZEFAes"],
+  ["恆春", "https://go.one.blendvision.com/pELkFl/pixJZb2a"],
+  ["穿出去", "https://go.one.blendvision.com/pELkFl/6S7UiSKG"],
+  ["開掘", "https://go.one.blendvision.com/pELkFl/1PDdg6tz"],
+  ["冰棒", "https://go.one.blendvision.com/pELkFl/mSVulreT"],
+  ["裝", "https://go.one.blendvision.com/pELkFl/FKCxakWl"],
+  ["六邊形", "https://go.one.blendvision.com/pELkFl/N3ydCD8A"],
+  ["七邊形", "https://go.one.blendvision.com/pELkFl/AZ7S0MIB"],
+  ["十三邊形", "https://go.one.blendvision.com/pELkFl/rZT38m3V"],
+  ["十四邊形", "https://go.one.blendvision.com/pELkFl/ZwLx9dcI"],
+  ["十五邊形", "https://go.one.blendvision.com/pELkFl/Zqc7aGU8"],
+  ["正方形", "https://go.one.blendvision.com/pELkFl/ZQ0bU7yR"],
+  ["九邊形", "https://go.one.blendvision.com/pELkFl/CBMBUkar"],
+  ["十邊形", "https://go.one.blendvision.com/pELkFl/C495zy6T"],
+  ["五邊形", "https://go.one.blendvision.com/pELkFl/iwxxCzs4"],
+  ["八邊形", "https://go.one.blendvision.com/pELkFl/eAQeNZYa"],
+  ["十一邊形", "https://go.one.blendvision.com/pELkFl/1HnQKMLc"],
+  ["四邊形", "https://go.one.blendvision.com/pELkFl/EyXKXd26"],
+  ["十二邊形", "https://go.one.blendvision.com/pELkFl/5ixmO7BD"],
+  ["十六邊形", "https://go.one.blendvision.com/pELkFl/JwBH2sXr"],
+  ["二十一邊形", "https://go.one.blendvision.com/pELkFl/YPbL5WdH"],
+  ["十七邊形", "https://go.one.blendvision.com/pELkFl/VcaK3WXt"],
+  ["十八邊形", "https://go.one.blendvision.com/pELkFl/bkn2iXFp"],
+  ["十九邊形", "https://go.one.blendvision.com/pELkFl/2SKh4sRn"],
+  ["二十邊形", "https://go.one.blendvision.com/pELkFl/AFLLTIjo"],
+  ["二十二邊形", "https://go.one.blendvision.com/pELkFl/sWfT0B7t"],
+  ["二十五邊形", "https://go.one.blendvision.com/pELkFl/CukNIVtZ"],
+  ["二十七邊形", "https://go.one.blendvision.com/pELkFl/gVmJuSDa"],
+  ["二十八邊形", "https://go.one.blendvision.com/pELkFl/FgoAQnMt"],
+  ["二十三邊形", "https://go.one.blendvision.com/pELkFl/croQZGlZ"],
+  ["三十二邊形", "https://go.one.blendvision.com/pELkFl/RV62SMuT"],
+  ["二十四邊形", "https://go.one.blendvision.com/pELkFl/qMR9EFAX"],
+  ["二十六邊形", "https://go.one.blendvision.com/pELkFl/H6JP5Lb8"],
+  ["二十九邊形", "https://go.one.blendvision.com/pELkFl/yCTOb3TL"],
+  ["三十邊形", "https://go.one.blendvision.com/pELkFl/SEko3p3n"],
+  ["三十一邊形", "https://go.one.blendvision.com/pELkFl/iCgHnZBU"],
+  ["三角形", "https://go.one.blendvision.com/pELkFl/UV9Gm1RG"],
+  ["三十四邊形", "https://go.one.blendvision.com/pELkFl/4NmzTmVm"],
+  ["三十七邊形", "https://go.one.blendvision.com/pELkFl/zYfeUOps"],
+  ["圓形", "https://go.one.blendvision.com/pELkFl/pWSKcXYD"],
+  ["小形", "https://go.one.blendvision.com/pELkFl/WBDKOYV2"],
+  ["三十三邊形", "https://go.one.blendvision.com/pELkFl/gzAFa3tV"],
+  ["三十五邊形", "https://go.one.blendvision.com/pELkFl/AYgj1ONJ"],
+  ["三十六邊形", "https://go.one.blendvision.com/pELkFl/ZIAd7iTb"],
+  ["三十八邊形", "https://go.one.blendvision.com/pELkFl/HwMxI9FA"],
+  ["三十九邊形", "https://go.one.blendvision.com/pELkFl/JnPKTc7h"],
+  ["只有兩邊不形", "https://go.one.blendvision.com/pELkFl/U2OdyLwh"],
+  ["中形", "https://go.one.blendvision.com/pELkFl/VzVuriO1"],
+  ["二十五度西", "https://go.one.blendvision.com/pELkFl/F8ipwN7i"],
+  ["在二十五度西的天氣走路", "https://go.one.blendvision.com/pELkFl/9Dqe6G6c"],
+  ["交換訊息", "https://go.one.blendvision.com/pELkFl/ndfZGnX7"],
+  ["天際線", "https://go.one.blendvision.com/pELkFl/wUyGqoBG"],
+  ["意識交流", "https://go.one.blendvision.com/pELkFl/ACV7xf10"],
+  ["自言自語", "https://go.one.blendvision.com/pELkFl/QTC5PuPV"],
+  ["懶洋洋", "https://go.one.blendvision.com/pELkFl/deywDy3O"],
+  ["人生還是充滿希望", "https://go.one.blendvision.com/pELkFl/CaIuX7rj"],
+  ["金色時光", "https://go.one.blendvision.com/pELkFl/c9csmf1B"],
+  ["有效溝通", "https://go.one.blendvision.com/pELkFl/dKmO3scF"],
+  ["童言童語", "https://go.one.blendvision.com/pELkFl/TcllJpH7"],
+  ["無效溝通", "https://go.one.blendvision.com/pELkFl/E5cxqgta"],
+  ["小時了了", "https://go.one.blendvision.com/pELkFl/1b7N7S8a"],
+  ["倒計時", "https://go.one.blendvision.com/pELkFl/2iT3Qy4Q"],
+  ["媽咪的主場秀", "https://go.one.blendvision.com/pELkFl/FZZKqJw8"],
+  ["地毯式搜索", "https://go.one.blendvision.com/pELkFl/REeK5yVp"],
+  ["星空隧道", "https://go.one.blendvision.com/pELkFl/GMiZ2l47"]
+];
+const N = ROWS.length;
+const KEY = "fz-vote-v1";
+
+/* ---------- state ---------- */
+const okIds = a => Array.isArray(a) ? a.filter(x => Number.isInteger(x) && x >= 0 && x < N) : [];
+let S = { votes: [[], [], []], heard: [], mute: false };
+try {
+  const s = JSON.parse(localStorage.getItem(KEY) || "null");
+  if (s && typeof s === "object") S = { votes: [0, 1, 2].map(p => okIds(Array.isArray(s.votes) ? s.votes[p] : null)), heard: okIds(s.heard), mute: s.mute === true };
+} catch (e) {}
+const votes = S.votes.map(a => new Set(a));
+const heard = new Set(S.heard);
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify({ votes: votes.map(s => [...s]), heard: [...heard], mute: S.mute })); } catch (e) {}
+}
+
+/* ---------- sound：WebAudio 合成，無音檔 ---------- */
+let AC = null;
+function ac() {
+  if (S.mute) return null;
+  try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state !== "running") AC.resume(); } catch (e) { AC = null; }
+  return AC;
+}
+function tone(freq, { t = 0, dur = .12, type = "triangle", vol = .18, slide = 0 } = {}) {
+  const a = ac(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain(), now = a.currentTime + t;
+  o.type = type; o.frequency.setValueAtTime(freq, now);
+  if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, now + dur);
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(vol, now + .006);          // attack 6ms：按下即響
+  g.gain.exponentialRampToValueAtTime(.0008, now + dur);    // 短 release，不拖泥帶水
+  o.connect(g).connect(a.destination); o.start(now); o.stop(now + dur + .02);
+}
+const sfx = {
+  like: p => { tone(NOTE[p], { dur: .16 }); tone(NOTE[p] * 2, { t: .045, dur: .12, vol: .08, type: "sine" }); },
+  unlike: p => tone(NOTE[p], { dur: .14, slide: .7, vol: .12 }),
+  chord: () => [0, 1, 2].forEach((p, i) => tone(NOTE[p], { t: i * .06, dur: .5, vol: .12 })),
+  locked: () => { tone(220, { dur: .07, type: "square", vol: .06 }); tone(196, { t: .09, dur: .09, type: "square", vol: .06 }); },
+  unlock: k => tone(880 + k * 220, { dur: .1, type: "sine", vol: .1 }),
+  open: () => tone(392, { dur: .08, type: "sine", vol: .1 }),
+  mile: () => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, { t: i * .07, dur: .18, vol: .1 })),
+  done: () => [392, 523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => tone(f, { t: i * .08, dur: .3, vol: .1 }))
+};
+try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}   // iOS 17+：靜音鍵下也出聲
+addEventListener("pointerdown", () => ac(), { capture: true, passive: true });             // 第一次觸碰就解鎖音訊
+document.body.addEventListener("touchstart", () => {}, { passive: true });                 // 讓 iOS 套用 :active
+function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
+
+/* ---------- particles ---------- */
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function burst(el, color, count = 7, glyph = "♥") {
+  if (REDUCED) return;
+  const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  for (let i = 0; i < count; i++) {
+    const s = document.createElement("span");
+    s.className = "fx"; s.textContent = glyph; s.style.color = color;
+    s.style.left = cx + "px"; s.style.top = cy + "px";
+    document.body.appendChild(s);
+    const ang = (-90 + (Math.random() - .5) * 150) * Math.PI / 180, d = 26 + Math.random() * 30;
+    s.animate([
+      { transform: "translate(-50%,-50%) scale(.6)", opacity: 1 },
+      { transform: `translate(calc(-50% + ${Math.cos(ang) * d}px), calc(-50% + ${Math.sin(ang) * d}px)) scale(1)`, opacity: 1, offset: .6 },
+      { transform: `translate(calc(-50% + ${Math.cos(ang) * d * 1.2}px), calc(-50% + ${Math.sin(ang) * d * 1.2 + 14}px)) scale(.8)`, opacity: 0 }
+    ], { duration: 520 + Math.random() * 200, easing: "cubic-bezier(.2,.8,.3,1)" }).onfinish = () => s.remove();
+  }
+}
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+
+let toastT;
+function toast(msg) {
+  const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 1800);
+}
+const ANIMS = ["pop", "drop", "unlock", "shake", "flash", "nudge"];
+function retrigger(el, cls) { el.classList.remove(...ANIMS); void el.offsetWidth; el.classList.add(cls); el.addEventListener("animationend", () => el.classList.remove(cls), { once: true }); }
+
+/* ---------- list ---------- */
+const list = document.getElementById("list");
+const rowEls = [];
+ROWS.forEach(([title, url], i) => {
+  const li = document.createElement("li");
+  li.className = "row"; li.dataset.i = i;
+  li.innerHTML = '<span class="cue"></span><span class="song"><b></b><a class="play" target="_blank" rel="noopener">▶ 聽</a></span><span class="chips"></span>';
+  li.querySelector(".cue").textContent = String(i + 1).padStart(2, "0");
+  li.querySelector("b").textContent = title;
+  const a = li.querySelector(".play"); a.href = url;
+  ["click", "auxclick", "contextmenu"].forEach(ev => a.addEventListener(ev, () => markHeard(i)));
+  const chips = li.querySelector(".chips");
+  PEOPLE.forEach((name, p) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.dataset.p = p; b.textContent = name;
+    b.setAttribute("aria-pressed", "false"); b.setAttribute("aria-label", name + " 喜歡 " + title);
+    // pointerdown 立刻壓下（輸入→回饋 0 延遲），click 才結算
+    // 滑鼠立即壓；觸控延 60ms，避免捲動時整排 chip 縮一下
+    let pt;
+    b.addEventListener("pointerdown", e => { clearTimeout(pt); if (e.pointerType === "mouse") b.classList.add("press"); else pt = setTimeout(() => b.classList.add("press"), 60); });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(ev => b.addEventListener(ev, () => { clearTimeout(pt); b.classList.remove("press"); }));
+    b.addEventListener("click", () => toggle(i, p, b));
+    chips.appendChild(b);
+  });
+  list.appendChild(li); rowEls.push(li);
+});
+
+function paintRow(i) {
+  const li = rowEls[i];
+  li.classList.toggle("heard", heard.has(i));
+  let n = 0;
+  li.querySelectorAll(".chip").forEach((b, p) => { const on = votes[p].has(i); b.setAttribute("aria-pressed", on); n += on; });
+  li.classList.toggle("allin", n === 3);
+}
+
+// 按 ▶ 聽 時頁面馬上切到背景，慶祝留到「回來那一刻」才播
+let pending = [], flushT;
+function markHeard(i) {
+  if (heard.has(i)) return;
+  heard.add(i); save(); paintDock(false);
+  pending.push(i);
+  clearTimeout(flushT);
+  flushT = setTimeout(() => { if (document.visibilityState === "visible") flush(); }, 900);   // 沒切走（如被擋彈窗）也照播
+}
+function flush() {
+  if (!pending.length) return;
+  const rows = pending; pending = [];
+  const last = rows[rows.length - 1], li = rowEls[last];
+  if (listEl().classList.contains("off")) showTab(false);
+  const r = li.getBoundingClientRect();
+  if (r.top < 0 || r.bottom > innerHeight - 110) li.scrollIntoView({ behavior: "auto", block: "center" });
+  setTimeout(() => {
+    rows.forEach(paintRow); paintDock(true);
+    retrigger(li.querySelector(".cue"), "pop");
+    li.querySelectorAll(".chip").forEach((b, k) => setTimeout(() => { retrigger(b, "unlock"); sfx.unlock(k); }, k * 60));
+    const c = heard.size, crossed = rows.some((_, k) => (c - k) % 10 === 0);
+    if (c === N) setTimeout(() => { sfx.done(); toast(N + " 段全部聽完！記得交卷 🎉"); confetti(); }, 320);
+    else if (crossed) setTimeout(() => { sfx.mile(); toast("已聽 " + c + " 段，繼續！"); }, 260);
+  }, 120);
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { ac(); setTimeout(flush, 150); } });
+
+function toggle(i, p, b) {
+  const li = rowEls[i];
+  if (!heard.has(i)) {                                  // 規則：先聽再投
+    sfx.locked(); buzz(30); retrigger(li, "shake");
+    const play = li.querySelector(".play"); retrigger(play, "nudge");
+    toast("先按 ▶ 聽，再投票");
+    return;
+  }
+  const on = !votes[p].has(i);
+  on ? votes[p].add(i) : votes[p].delete(i);
+  save(); b.classList.remove("press");
+  if (on) {
+    retrigger(b, "pop"); sfx.like(p); buzz(12);
+    burst(b, cssVar("--p" + p));
+    if (votes.every(s => s.has(i))) {                    // 三人全票：和弦＋金色
+      setTimeout(() => { sfx.chord(); burst(li.querySelector(".chips"), cssVar("--gold"), 12, "★"); toast("全票通過 ★ " + ROWS[i][0]); }, 140);
+    }
+  } else {
+    retrigger(b, "drop"); sfx.unlike(p);
+  }
+  paintRow(i); paintDock(true, p);
+}
+
+/* ---------- dock ---------- */
+const stat = document.getElementById("stat");
+function paintDock(anim, bumpP) {
+  document.getElementById("meter").style.width = (heard.size / N * 100) + "%";
+  stat.innerHTML = "已聽 <b>" + heard.size + "</b>/" + N + " · " +
+    PEOPLE.map((n, p) => n + " <b class=\"" + (anim && p === bumpP ? "bump" : "") + "\">" + votes[p].size + "</b>").join(" · ");
+}
+document.getElementById("next").addEventListener("click", () => {
+  const cur = rowEls.findIndex(li => li.getBoundingClientRect().top > 60);
+  let j = -1;
+  for (let k = 0; k < N; k++) { const x = (Math.max(cur, 0) + k) % N; if (!heard.has(x)) { j = x; break; } }
+  if (j < 0) { toast("都聽過了，可以交卷"); return; }
+  if (listEl().classList.contains("off")) showTab(false);
+  rowEls[j].scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "center" });
+  retrigger(rowEls[j], "flash"); retrigger(rowEls[j].querySelector(".play"), "nudge");
+});
+function listEl() { return list; }
+const muteBtn = document.getElementById("mute");
+function paintMute() { muteBtn.textContent = S.mute ? "🔇" : "🔊"; }
+muteBtn.addEventListener("click", () => { S.mute = !S.mute; save(); paintMute(); if (!S.mute) sfx.open(); });
+
+/* ---------- confetti ---------- */
+function confetti() {
+  if (REDUCED) return;
+  const cols = [cssVar("--p0"), cssVar("--p1"), cssVar("--p2"), cssVar("--gold")];
+  for (let k = 0; k < 40; k++) {
+    const s = document.createElement("span"); s.className = "fx"; s.textContent = "■";
+    s.style.color = cols[k % 4]; s.style.left = (Math.random() * 100) + "vw"; s.style.top = "-10px"; s.style.fontSize = (6 + Math.random() * 8) + "px";
+    document.body.appendChild(s);
+    s.animate([{ transform: "translateY(0) rotate(0)" }, { transform: `translateY(${innerHeight + 40}px) rotate(${Math.random() * 720}deg)` }],
+      { duration: 1400 + Math.random() * 1200, delay: Math.random() * 300, easing: "cubic-bezier(.3,.1,.6,1)" }).onfinish = () => s.remove();
+  }
+}
+
+/* ---------- ranking ---------- */
+function paintRank() {
+  const items = ROWS.map((r, i) => ({ i, n: votes.reduce((s, v) => s + v.has(i), 0) })).filter(x => x.n > 0)
+    .sort((a, b) => b.n - a.n || a.i - b.i);
+  document.getElementById("totals").innerHTML =
+    PEOPLE.map((n, p) => n + " <b>" + votes[p].size + "</b> 票").join(" · ") + " · 全票 <b>" + items.filter(x => x.n === 3).length + "</b> 段";
+  const ol = document.getElementById("rankList"); ol.innerHTML = "";
+  if (!items.length) { ol.innerHTML = '<li class="empty">還沒有人投票</li>'; return; }
+  items.forEach((x, k) => {
+    const li = document.createElement("li"); li.className = "rk" + (x.n === 3 ? " allin" : "");
+    li.innerHTML = '<span class="n"></span><span class="t"><small></small><span></span></span><span class="dots"></span>';
+    li.querySelector(".n").textContent = (k + 1) + ".";
+    li.querySelector("small").textContent = String(x.i + 1).padStart(2, "0");
+    li.querySelector(".t span").textContent = ROWS[x.i][0];
+    PEOPLE.forEach((n, p) => {
+      const d = document.createElement("span"); d.className = "dot" + (votes[p].has(x.i) ? " on" : ""); d.dataset.p = p; d.textContent = n[0]; d.title = n;
+      li.querySelector(".dots").appendChild(d);
+    });
+    ol.appendChild(li);
+  });
+}
+const tabList = document.getElementById("tabList"), tabRank = document.getElementById("tabRank");
+function showTab(rank) {
+  tabList.setAttribute("aria-selected", !rank); tabRank.setAttribute("aria-selected", rank);
+  list.classList.toggle("off", rank); document.getElementById("rank").classList.toggle("on", rank);
+  if (rank) paintRank();
+}
+tabList.addEventListener("click", () => showTab(false));
+tabRank.addEventListener("click", () => showTab(true));
+
+/* ---------- 交卷：把某人的票編進網址 #v=名字:段號.段號… ---------- */
+const sheetBg = document.getElementById("sheetBg"), out = document.getElementById("out"), send = document.getElementById("send"), msg = document.getElementById("sheetMsg");
+const pick = document.getElementById("pick");
+function linkFor(p) {
+  const ids = [...votes[p]].sort((a, b) => a - b).map(i => i + 1).join(".");
+  return location.href.split("#")[0] + "#v=" + encodeURIComponent(PEOPLE[p]) + ":" + (ids || "0");
+}
+PEOPLE.forEach((n, p) => {
+  const b = document.createElement("button"); b.type = "button"; b.textContent = n;
+  b.style.color = "var(--p" + p + ")";
+  b.addEventListener("click", () => {
+    msg.textContent = n + " 選了 " + votes[p].size + " 段（已聽 " + heard.size + "/" + N + "）。複製下面連結，傳給我們。";
+    out.value = linkFor(p); out.hidden = false; send.hidden = false; send.dataset.p = p;
+  });
+  pick.appendChild(b);
+});
+document.getElementById("submit").addEventListener("click", () => {
+  msg.textContent = "你是哪一位？"; out.hidden = true; send.hidden = true; sheetBg.classList.add("on");
+});
+document.getElementById("close").addEventListener("click", () => sheetBg.classList.remove("on"));
+sheetBg.addEventListener("click", e => { if (e.target === sheetBg) sheetBg.classList.remove("on"); });
+send.addEventListener("click", () => {
+  const text = "反正 段落選拔｜" + PEOPLE[+send.dataset.p] + "\n" + out.value;
+  const ok = () => { send.textContent = "已複製 ✓"; sfx.mile(); setTimeout(() => send.textContent = "複製連結", 1600); };
+  const fb = () => { out.select(); try { document.execCommand("copy") ? ok() : toast("請手動選取複製"); } catch (e) { toast("請手動選取複製"); } };
+  try { navigator.clipboard.writeText(text).then(ok, fb); } catch (e) { fb(); }
+});
+
+/* ---------- 收卷：打開別人傳來的連結，覆蓋那個人的票 ---------- */
+function importHash() {
+  const m = location.hash.match(/^#v=([^:]+):([\d.]*)/);
+  if (!m) return;
+  let name; try { name = decodeURIComponent(m[1]); } catch (e) { return; }
+  const p = PEOPLE.indexOf(name); if (p < 0) return;
+  const ids = m[2].split(".").map(Number).filter(x => x >= 1 && x <= N).map(x => x - 1);
+  votes[p] = new Set(ids); save(); const got = votes[p].size;
+  history.replaceState(null, "", location.pathname);
+  ROWS.forEach((_, i) => paintRow(i)); paintDock(true, p);
+  showTab(true);
+  setTimeout(() => { toast("已收到 " + name + " 的 " + got + " 票"); sfx.mile(); }, 200);
+}
+
+/* ---------- init ---------- */
+ROWS.forEach((_, i) => paintRow(i));
+paintDock(false); paintMute();
+importHash();
+addEventListener("hashchange", importHash);
+</script>
+</body>
+</html>
