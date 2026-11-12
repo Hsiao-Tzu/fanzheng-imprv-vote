@@ -19,3 +19,8 @@ GitHub Pages 靜態頁，範本來自 `Hsiao-Tzu/aolitu-foh-aod`（含試聽聲�
 
 ## 產出歸屬
 - 正式網址：https://hsiao-tzu.github.io/fanzheng-imprv-vote/
+
+## 改字流程（2026-11-12 使用者定）
+- 使用者在桌面版 VS Code（Live Preview 邊改邊看）改文案、`Cmd+S` 存檔，不自己 commit；說「上線」由 Claude 接手。
+- Claude：`git diff` 比對 → 檢查符號／標籤沒被改壞（有問題先說，不直接推）→ commit 說明格式 `文案：<改了哪裡>，<舊字> → <新字>` → 直推 `main` → 確認 Pages 出現新字才回報。
+- 不走分支／PR／review（使用者定：只有本人改文案時維持直推）；日後有他人共編再改走 PR。
