@@ -49,10 +49,6 @@ h1 { margin: 0; font-size: 26px; font-weight: 700; }
 button { font: inherit; cursor: pointer; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; touch-action: manipulation; }
 button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* tabs */
-.tabs { display: flex; gap: 6px; margin-bottom: 12px; }
-.tabs button { padding: 7px 14px; font-size: 14px; }
-.tabs button[aria-selected="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 
 /* list */
 ol { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden; }
@@ -73,8 +69,8 @@ ol { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); bor
   flex: none; font-size: 12.5px; text-decoration: none; color: var(--accent-ink); background: var(--accent);
   border-radius: 999px; padding: 3px 10px; font-weight: 500; transition: transform .08s;
 }
-.play:active, .dock button:active, .tabs button:active, .sheet button:active { transform: scale(.93); }
-.dock button, .tabs button, .sheet button { transition: transform .08s; }
+.play:active, .dock button:active, .sheet button:active { transform: scale(.93); }
+.dock button, .sheet button { transition: transform .08s; }
 .row.heard .play { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .play.nudge { animation: nudge .5s ease; }
 @keyframes nudge { 0%,100% { transform: scale(1); } 30% { transform: scale(1.25); } 60% { transform: scale(.95); } }
@@ -109,22 +105,6 @@ ol { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); bor
 /* particles */
 .fx { position: fixed; pointer-events: none; z-index: 50; font-size: 14px; will-change: transform, opacity; }
 
-/* ranking */
-.rank { display: none; }
-.rank.on { display: block; }
-.list.off { display: none; }
-.rk { display: grid; grid-template-columns: 2em minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); }
-.rk:first-child { border-top: 0; }
-.rk .n { font-family: var(--mono); font-size: 12px; color: var(--muted); }
-.rk .t { min-width: 0; }
-.rk .t small { color: var(--muted); font-family: var(--mono); margin-right: 6px; }
-.dots { display: flex; gap: 4px; }
-.dot { width: 1.6em; height: 1.6em; border-radius: 50%; display: grid; place-items: center; font-size: 11px; color: #fff; background: var(--line); }
-.dot.on[data-p="0"] { background: var(--p0); } .dot.on[data-p="1"] { background: var(--p1); } .dot.on[data-p="2"] { background: var(--p2); }
-.rk.allin { background: var(--gold-soft); }
-.empty { padding: 18px; color: var(--muted); text-align: center; }
-.totals { display: flex; gap: 14px; flex-wrap: wrap; margin: 0 0 10px; font-size: 13.5px; color: var(--muted); }
-.totals b { font-variant-numeric: tabular-nums; }
 
 /* dock */
 .dock {
@@ -191,17 +171,7 @@ ol { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); bor
     <li>③ 聽完按交卷</li>
   </ul>
 
-  <div class="tabs" role="tablist">
-    <button type="button" role="tab" id="tabList" aria-selected="true">試聽</button>
-    <button type="button" role="tab" id="tabRank" aria-selected="false">排行</button>
-  </div>
-
   <ol id="list" class="list"></ol>
-
-  <section id="rank" class="rank">
-    <div class="totals" id="totals"></div>
-    <ol id="rankList"></ol>
-  </section>
 </div>
 
 <div class="dock">
@@ -454,7 +424,6 @@ function flush() {
   if (!pending.length) return;
   const rows = pending; pending = [];
   const last = rows[rows.length - 1], li = rowEls[last];
-  if (listEl().classList.contains("off")) showTab(false);
   const r = li.getBoundingClientRect();
   if (r.top < 0 || r.bottom > innerHeight - 110) li.scrollIntoView({ behavior: "auto", block: "center" });
   setTimeout(() => {
@@ -503,11 +472,9 @@ document.getElementById("next").addEventListener("click", () => {
   let j = -1;
   for (let k = 0; k < N; k++) { const x = (Math.max(cur, 0) + k) % N; if (!heard.has(x)) { j = x; break; } }
   if (j < 0) { toast("都聽過了，可以交卷"); return; }
-  if (listEl().classList.contains("off")) showTab(false);
   rowEls[j].scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "center" });
   retrigger(rowEls[j], "flash"); retrigger(rowEls[j].querySelector(".play"), "nudge");
 });
-function listEl() { return list; }
 const muteBtn = document.getElementById("mute");
 function paintMute() { muteBtn.textContent = S.mute ? "🔇" : "🔊"; }
 muteBtn.addEventListener("click", () => { S.mute = !S.mute; save(); paintMute(); if (!S.mute) sfx.open(); });
@@ -524,36 +491,6 @@ function confetti() {
       { duration: 1400 + Math.random() * 1200, delay: Math.random() * 300, easing: "cubic-bezier(.3,.1,.6,1)" }).onfinish = () => s.remove();
   }
 }
-
-/* ---------- ranking ---------- */
-function paintRank() {
-  const items = ROWS.map((r, i) => ({ i, n: votes.reduce((s, v) => s + v.has(i), 0) })).filter(x => x.n > 0)
-    .sort((a, b) => b.n - a.n || a.i - b.i);
-  document.getElementById("totals").innerHTML =
-    PEOPLE.map((n, p) => n + " <b>" + votes[p].size + "</b> 票").join(" · ") + " · 全票 <b>" + items.filter(x => x.n === 3).length + "</b> 段";
-  const ol = document.getElementById("rankList"); ol.innerHTML = "";
-  if (!items.length) { ol.innerHTML = '<li class="empty">還沒有人投票</li>'; return; }
-  items.forEach((x, k) => {
-    const li = document.createElement("li"); li.className = "rk" + (x.n === 3 ? " allin" : "");
-    li.innerHTML = '<span class="n"></span><span class="t"><small></small><span></span></span><span class="dots"></span>';
-    li.querySelector(".n").textContent = (k + 1) + ".";
-    li.querySelector("small").textContent = String(x.i + 1).padStart(2, "0");
-    li.querySelector(".t span").textContent = ROWS[x.i][0];
-    PEOPLE.forEach((n, p) => {
-      const d = document.createElement("span"); d.className = "dot" + (votes[p].has(x.i) ? " on" : ""); d.dataset.p = p; d.textContent = n[0]; d.title = n;
-      li.querySelector(".dots").appendChild(d);
-    });
-    ol.appendChild(li);
-  });
-}
-const tabList = document.getElementById("tabList"), tabRank = document.getElementById("tabRank");
-function showTab(rank) {
-  tabList.setAttribute("aria-selected", !rank); tabRank.setAttribute("aria-selected", rank);
-  list.classList.toggle("off", rank); document.getElementById("rank").classList.toggle("on", rank);
-  if (rank) paintRank();
-}
-tabList.addEventListener("click", () => showTab(false));
-tabRank.addEventListener("click", () => showTab(true));
 
 /* ---------- 交卷：把某人的票編進網址 #v=名字:段號.段號… ---------- */
 const sheetBg = document.getElementById("sheetBg"), out = document.getElementById("out"), send = document.getElementById("send"), msg = document.getElementById("sheetMsg");
@@ -593,7 +530,6 @@ function importHash() {
   votes[p] = new Set(ids); save(); const got = votes[p].size;
   history.replaceState(null, "", location.pathname);
   ROWS.forEach((_, i) => paintRow(i)); paintDock(true, p);
-  showTab(true);
   setTimeout(() => { toast("已收到 " + name + " 的 " + got + " 票"); sfx.mile(); }, 200);
 }
 
