@@ -8,6 +8,9 @@ GitHub Pages 靜態頁，範本來自 `Hsiao-Tzu/aolitu-foh-aod`（含試聽聲�
 ## 範圍鐵則
 - 純靜態：無後端、無金鑰、不打 BlendVision API。票只存在各人瀏覽器 localStorage（key `fz-vote-v1`）。
 - 統計靠交卷連結 `#v=<名字>:<段號.段號…>`（段號 1 起算＝頁面編號）；打開即覆蓋那個人的票（以最新一次交卷為準）。
+- 播放在頁內：按「▶ 聽」在該列展開 BlendVision 官方嵌入播放器 `https://showroom.one.blendvision.com/embed?token=<token>&autoplay=true`（一次只開一段，收起＝移除 iframe＝停播）。
+  `ROWS` 每列＝[段名, 展示間短網址, 嵌入 token]；token 取自短網址轉址後的 `?token=`。**不能嵌展示間首頁 `/?token=`**（iframe 內報 6001）。
+  若 BV 端重產分享連結，token 會變，要重跑轉址抓 token 更新 `ROWS`。
 - 段落資料只在 index.html 的 `ROWS` 常數，來源＝Drive 試算表「反正 短網址」(ID 19jFP6CzryrqG42V0SIoM8tGOEn8VQOUr98augCifBAY)。
   **段落順序不可改**：交卷連結用段號，改順序會讓舊連結對錯段。要加段只能加在尾端。
 - 遊戲手感：先聽才能投（未聽按名字＝搖晃＋低音＋提示）、按下即壓（pointerdown）、放開彈出＋音高（聰 C5／佳 E5／趙 G5，三人全票＝C 大三和弦＋金色）、
